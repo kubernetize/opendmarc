@@ -1,0 +1,12 @@
+--- a/opendmarc/opendmarc.c	2021-04-30 17:34:43.000000000 +0100
++++ b/opendmarc/opendmarc.c	2021-06-19 19:23:24.805294154 +0100
+@@ -2967,6 +2968,9 @@ mlfi_eom(SMFICTX *ctx)
+ 							eptr = hsearch(entry,
+ 							               FIND);
+ 							pthread_rwlock_unlock(&hash_lock);
++
++							free(arcdomain);
++
+ 							if (eptr == NULL)
+ 								continue;
+ 

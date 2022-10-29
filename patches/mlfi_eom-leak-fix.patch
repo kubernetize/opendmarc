@@ -1,0 +1,49 @@
+diff --git a/opendmarc/opendmarc.c b/opendmarc/opendmarc.c
+index aee0d48..aa59b65 100644
+--- a/opendmarc/opendmarc.c
++++ b/opendmarc/opendmarc.c
+@@ -2303,8 +2303,9 @@ mlfi_header(SMFICTX *ctx, char *headerf, char *headerv)
+ **  	An SMFIS_* constant.
+ */
+ 
++static
+ sfsistat
+-mlfi_eom(SMFICTX *ctx)
++_mlfi_eom(SMFICTX *ctx, u_char ***usersp, u_char ***domainsp)
+ {
+ 	_Bool wspf = FALSE;
+ 	int c;
+@@ -2466,6 +2467,8 @@ mlfi_eom(SMFICTX *ctx)
+ 	memset(addrbuf, '\0', sizeof addrbuf);
+ 	strncpy(addrbuf, from->hdr_value, sizeof addrbuf - 1);
+ 	status = dmarcf_mail_parse_multi(addrbuf, &users, &domains, &froms);
++	*usersp = users;
++	*domainsp = domains;
+ 	if (status == 0 && domains[0] != NULL)
+ 	{
+ 		/*
+@@ -3862,6 +3865,24 @@ mlfi_eom(SMFICTX *ctx)
+ 	return ret;
+ }
+ 
++sfsistat
++mlfi_eom(SMFICTX *ctx)
++{
++	u_char **users = NULL;
++	u_char **domains = NULL;
++	sfsistat ret;
++
++	ret = _mlfi_eom(ctx, &users, &domains);
++
++	if (users != NULL)
++		free(users);
++	if (domains != NULL)
++		free(domains);
++
++	return ret;
++}
++
++
+ /*
+ **  MLFI_ABORT -- handler called if an earlier filter in the filter process
+ **                rejects the message
