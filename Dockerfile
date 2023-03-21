@@ -1,4 +1,4 @@
-FROM alpine:3.16 AS build
+FROM alpine:3.17 AS build
 
 ARG pkgver=rel-opendmarc-1-4-2
 
@@ -33,7 +33,7 @@ RUN make install
 
 RUN strip -s /usr/sbin/opendmarc /usr/lib/libopendmarc.so.2
 
-FROM alpine:3.16
+FROM alpine:3.17
 
 LABEL maintainer="Richard Kojedzinszky <richard@kojedz.in>"
 
