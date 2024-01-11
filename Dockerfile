@@ -1,9 +1,9 @@
-FROM alpine:3.17 AS build
+FROM debian:bookworm-slim AS build
 
 ARG pkgver=rel-opendmarc-1-4-2
 
 RUN \
-    apk --no-cache add curl tar gcc libc-dev make patch pkgconf libmilter-dev libspf2-dev autoconf automake libtool && \
+    apt update && apt install -y curl gcc make patch libmilter-dev libspf2-dev autoconf automake libtool && \
     mkdir /opendmarc && \
     curl -sL https://github.com/trusteddomainproject/OpenDMARC/archive/refs/tags/$pkgver.tar.gz | \
     tar xzf - -C /opendmarc --strip-components=1
@@ -33,28 +33,27 @@ RUN make install
 
 RUN strip -s /usr/sbin/opendmarc /usr/lib/libopendmarc.so.2
 
-FROM alpine:3.17
+FROM debian:bookworm-slim
 
 LABEL maintainer="Richard Kojedzinszky <richard@kojedz.in>"
 
 COPY --from=build /usr/sbin/opendmarc /usr/sbin/
 COPY --from=build /usr/lib/libopendmarc.so.2 /usr/lib/
 COPY --from=build /usr/share/doc/opendmarc /usr/share/doc/opendmarc
-COPY --from=build /usr/share/doc/opendmarc/opendmarc.conf.sample /etc/opendmarc/opendmarc.conf
+COPY --from=build /usr/share/doc/opendmarc/opendmarc.conf.sample /etc/opendmarc.conf
 
 RUN \
-    addgroup -g 8893 opendmarc && \
-    adduser -h /run/opendmarc -S -D -H -G opendmarc -u 8893 opendmarc && \
-    mkdir -p /var/spool/opendmarc && \
-    chown opendmarc:mail /var/spool/opendmarc && \
-    chmod 750 /var/spool/opendmarc && \
-    apk --no-cache add libmilter libspf2 && \
+    useradd -u 8893 -d /run/opendmarc -M opendmarc && \
+    apt update && \
+    apt install -y libmilter1.0.1 libspf2-2 && \
+    apt clean && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
     sed -i \
-        -e '/^BaseDirectory/s/^/#/' \
-        -e '/^IgnoreHosts/s/^/#/' \
-	-e '/^Socket/s/@localhost//' \
-	/etc/opendmarc/opendmarc.conf
+    -e '/^BaseDirectory/s/^/#/' \
+    -e '/^IgnoreHosts/s/^/#/' \
+    -e '/^Socket/s/@localhost//' \
+    /etc/opendmarc.conf
 
 USER 8893
 
-CMD ["/usr/sbin/opendmarc", "-c", "/etc/opendmarc/opendmarc.conf", "-f"]
+CMD ["/usr/sbin/opendmarc", "-c", "/etc/opendmarc.conf", "-f"]
